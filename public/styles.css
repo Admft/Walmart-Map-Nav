@@ -184,6 +184,13 @@ svg:active {
   opacity: 0.22;
 }
 
+.aisleDotGold {
+  fill: #f59e0b;
+  opacity: 0.92;
+  stroke: #b45309;
+  stroke-width: 4;
+}
+
 .poi {
   fill: #111827;
   opacity: 0.78;

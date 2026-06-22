@@ -13,5 +13,11 @@
   },
   "dependencies": {
     "express": "^4.21.2"
+  },
+  "pkg": {
+    "assets": [
+      "launcher/pack/**/*"
+    ],
+    "outputPath": "dist"
   }
 }

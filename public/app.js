@@ -338,20 +338,31 @@ function drawRouteTo(target) {
   );
 }
 
+function drawAisleGoldDots(aisleKey) {
+  const pts = aislePointsFor(model.points, aisleKey);
+  for (const p of pts) {
+    addTo(highlightLayer, svgEl('circle', { cx: p.x, cy: p.y, r: 12, class: 'aisleDotGold' }));
+  }
+  return pts;
+}
+
 function highlightExact(exact) {
+  const aisleKey = aisleKeyFromPoint(exact);
+  if (aisleKey) drawAisleGoldDots(aisleKey);
+
   const near = model.points
     .map((p) => ({ ...p, d: distance(exact, p) }))
     .sort((a, b) => a.d - b.d)
     .slice(0, 12);
 
-  addTo(highlightLayer, svgEl('circle', { cx: exact.x, cy: exact.y, r: 170, class: 'targetRing2' }));
-  addTo(highlightLayer, svgEl('circle', { cx: exact.x, cy: exact.y, r: 105, class: 'targetRing' }));
-  addTo(highlightLayer, svgEl('line', { x1: exact.x - 150, y1: exact.y, x2: exact.x - 60, y2: exact.y, class: 'crosshair' }));
-  addTo(highlightLayer, svgEl('line', { x1: exact.x + 60, y1: exact.y, x2: exact.x + 150, y2: exact.y, class: 'crosshair' }));
-  addTo(highlightLayer, svgEl('line', { x1: exact.x, y1: exact.y - 150, x2: exact.x, y2: exact.y - 60, class: 'crosshair' }));
-  addTo(highlightLayer, svgEl('line', { x1: exact.x, y1: exact.y + 60, x2: exact.x, y2: exact.y + 150, class: 'crosshair' }));
-  addTo(highlightLayer, svgEl('circle', { cx: exact.x, cy: exact.y, r: 30, class: 'targetDot' }));
-  addTo(highlightLayer, svgEl('text', { x: exact.x + 50, y: exact.y + 16, class: 'label' }, exact.id));
+  addTo(highlightLayer, svgEl('circle', { cx: exact.x, cy: exact.y, r: 50, class: 'targetRing2' }));
+  addTo(highlightLayer, svgEl('circle', { cx: exact.x, cy: exact.y, r: 34, class: 'targetRing' }));
+  addTo(highlightLayer, svgEl('line', { x1: exact.x - 55, y1: exact.y, x2: exact.x - 22, y2: exact.y, class: 'crosshair' }));
+  addTo(highlightLayer, svgEl('line', { x1: exact.x + 22, y1: exact.y, x2: exact.x + 55, y2: exact.y, class: 'crosshair' }));
+  addTo(highlightLayer, svgEl('line', { x1: exact.x, y1: exact.y - 55, x2: exact.x, y2: exact.y - 22, class: 'crosshair' }));
+  addTo(highlightLayer, svgEl('line', { x1: exact.x, y1: exact.y + 22, x2: exact.x, y2: exact.y + 55, class: 'crosshair' }));
+  addTo(highlightLayer, svgEl('circle', { cx: exact.x, cy: exact.y, r: 18, class: 'targetDot' }));
+  addTo(highlightLayer, svgEl('text', { x: exact.x + 36, y: exact.y + 12, class: 'label' }, exact.id));
 
   const side = sideInfoForAisle(aisleKeyFromPoint(exact), aisleIndex);
   if (side?.hint) {
@@ -401,7 +412,7 @@ function highlightAisle(aisleKey) {
   }
 
   for (const p of pts) {
-    addTo(highlightLayer, svgEl('circle', { cx: p.x, cy: p.y, r: 14, class: 'aisleDot' }));
+    addTo(highlightLayer, svgEl('circle', { cx: p.x, cy: p.y, r: 12, class: 'aisleDotGold' }));
   }
 
   addTo(
