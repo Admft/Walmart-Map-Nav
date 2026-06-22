@@ -560,8 +560,8 @@ async function fetchMapData(id, forceDownload = false) {
     if (cached) return { mapData: cached, source: 'saved on this device' };
   }
 
-  if (window.BUNDLED_STORES?.[id]) {
-    const mapData = window.BUNDLED_STORES[id];
+  if (window.BUNDLED_STORES?.[id] || window.BUNDLED_STORES?.[String(Number(id))]) {
+    const mapData = window.BUNDLED_STORES[id] || window.BUNDLED_STORES[String(Number(id))];
     await storeCache.putStore(id, mapData);
     return { mapData, source: 'built into this file' };
   }
@@ -764,6 +764,9 @@ document.getElementById('clearBtn').onclick = () => {
   search.value = '';
 };
 loadStoreBtn.onclick = () => loadStore(storeInput.value);
+storeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loadStore(storeInput.value);
+});
 importStoreBtn.onclick = () => importStoreInput.click();
 importStoreInput.addEventListener('change', (e) => {
   const file = e.target.files?.[0];

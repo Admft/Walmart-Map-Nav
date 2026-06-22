@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "build": "node scripts/build-standalone.js",
-    "build:html": "node scripts/build-single-html.js",
+    "build:html": "node scripts/download-stores.js && node scripts/build-single-html.js",
+    "download-stores": "node scripts/download-stores.js",
     "build:exe": "node scripts/build-exe.js",
     "build:all": "node scripts/build-standalone.js && node scripts/build-single-html.js && node scripts/build-exe.js",
     "inspect": "node scripts/inspect-map.js stores/1216.html"
