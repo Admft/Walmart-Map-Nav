@@ -60,6 +60,27 @@ function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+function nearestAislePoint(x, y) {
+  if (!model?.points?.length) return { x, y, id: null, snapDistance: 0 };
+  let best = model.points[0];
+  let bestD = distance({ x, y }, best);
+  for (let i = 1; i < model.points.length; i++) {
+    const p = model.points[i];
+    const d = distance({ x, y }, p);
+    if (d < bestD) {
+      bestD = d;
+      best = p;
+    }
+  }
+  return { x: best.x, y: best.y, id: best.id, snapDistance: bestD };
+}
+
+function setPlacementPointerEvents(enabled) {
+  const value = enabled ? 'none' : '';
+  pointLayer.style.pointerEvents = value;
+  poiLayer.style.pointerEvents = value;
+}
+
 function svgEl(tag, attrs = {}, text) {
   const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
@@ -117,9 +138,10 @@ function drawMyLocation() {
   if (!myLocation) return;
   addTo(routeLayer, svgEl('circle', { cx: myLocation.x, cy: myLocation.y, r: 90, class: 'youRing' }));
   addTo(routeLayer, svgEl('circle', { cx: myLocation.x, cy: myLocation.y, r: 28, class: 'youDot' }));
+  const label = myLocation.id ? `You · ${myLocation.id}` : 'You';
   addTo(
     routeLayer,
-    svgEl('text', { x: myLocation.x + 36, y: myLocation.y + 10, class: 'label' }, 'You'),
+    svgEl('text', { x: myLocation.x + 36, y: myLocation.y + 10, class: 'label' }, label),
   );
 }
 
@@ -364,6 +386,7 @@ function applyModel(next) {
   placingLocation = false;
   myLocationBtn.classList.remove('active');
   svg.classList.remove('placing');
+  setPlacementPointerEvents(false);
   clearLayers();
   drawDepartments();
   drawBasePoints();
@@ -398,9 +421,11 @@ async function loadStore(storeId, forceDownload = false) {
 function clientToMap(evt) {
   const v = getView();
   const rect = svg.getBoundingClientRect();
+  const relX = (evt.clientX - rect.left) / rect.width;
+  const relY = (evt.clientY - rect.top) / rect.height;
   return {
-    x: v.x + ((evt.clientX - rect.left) / rect.width) * v.w,
-    y: v.y + ((evt.clientY - rect.top) / rect.height) * v.h,
+    x: v.x + relX * v.w,
+    y: v.y + relY * v.h,
   };
 }
 
@@ -408,10 +433,13 @@ function toggleMyLocationMode() {
   placingLocation = !placingLocation;
   myLocationBtn.classList.toggle('active', placingLocation);
   svg.classList.toggle('placing', placingLocation);
+  setPlacementPointerEvents(placingLocation);
   statusEl.textContent = placingLocation
-    ? 'Tap the map where you are standing'
+    ? 'Tap the map — snaps to nearest aisle marker'
     : myLocation
-      ? 'My location set'
+      ? myLocation.id
+        ? `My location: ${myLocation.id}`
+        : 'My location set'
       : statusEl.textContent;
 }
 
@@ -443,14 +471,20 @@ svg.addEventListener('pointerup', (e) => {
 
 svg.addEventListener('click', (e) => {
   if (!placingLocation) return;
-  myLocation = clientToMap(e);
+  const tap = clientToMap(e);
+  myLocation = nearestAislePoint(tap.x, tap.y);
   placingLocation = false;
   myLocationBtn.classList.remove('active');
   svg.classList.remove('placing');
+  setPlacementPointerEvents(false);
   renderRouteAndYou();
-  statusEl.textContent = `My location: x=${Math.round(myLocation.x)}, y=${Math.round(myLocation.y)}`;
+  statusEl.textContent = myLocation.id
+    ? `My location: ${myLocation.id}`
+    : `My location: x=${Math.round(myLocation.x)}, y=${Math.round(myLocation.y)}`;
   if (!current) {
-    details.innerHTML = '<span class="hint">Location set. Search an aisle, then the green line shows the way.</span>';
+    details.innerHTML = myLocation.id
+      ? `<span class="hint">Snapped to nearest marker <strong>${esc(myLocation.id)}</strong>. Search an aisle for directions.</span>`
+      : '<span class="hint">Location set. Search an aisle, then the green line shows the way.</span>';
   }
 });
 
