@@ -11,6 +11,7 @@ import {
 
 const svg = document.getElementById('svg');
 const deptLayer = document.getElementById('deptLayer');
+const deptLabelLayer = document.getElementById('deptLabelLayer');
 const pointLayer = document.getElementById('pointLayer');
 const poiLayer = document.getElementById('poiLayer');
 const routeLayer = document.getElementById('routeLayer');
@@ -93,6 +94,7 @@ function setPlacementPointerEvents(enabled) {
   pointLayer.style.pointerEvents = value;
   poiLayer.style.pointerEvents = value;
   deptLayer.style.pointerEvents = value;
+  deptLabelLayer.style.pointerEvents = value;
 }
 
 function svgEl(tag, attrs = {}, text) {
@@ -109,6 +111,7 @@ function addTo(layer, el) {
 
 function clearLayers() {
   deptLayer.innerHTML = '';
+  deptLabelLayer.innerHTML = '';
   pointLayer.innerHTML = '';
   poiLayer.innerHTML = '';
   routeLayer.innerHTML = '';
@@ -132,27 +135,144 @@ function boundariesToRect(boundaries) {
   };
 }
 
+function rectOverlapRatio(inner, outer) {
+  const ix = Math.max(inner.x, outer.x);
+  const iy = Math.max(inner.y, outer.y);
+  const ix2 = Math.min(inner.x + inner.w, outer.x + outer.w);
+  const iy2 = Math.min(inner.y + inner.h, outer.y + outer.h);
+  if (ix2 <= ix || iy2 <= iy) return 0;
+  const inter = (ix2 - ix) * (iy2 - iy);
+  return inter / (inner.w * inner.h);
+}
+
+function boxesOverlap(a, b, pad = 16) {
+  return !(
+    a.x + a.width + pad < b.x ||
+    b.x + b.width + pad < a.x ||
+    a.y + a.height + pad < b.y ||
+    b.y + b.height + pad < a.y
+  );
+}
+
+function labelSlots(rect) {
+  return [
+    { x: rect.cx, y: rect.cy },
+    { x: rect.cx, y: rect.y + rect.h * 0.28 },
+    { x: rect.cx, y: rect.y + rect.h * 0.72 },
+    { x: rect.x + rect.w * 0.28, y: rect.cy },
+    { x: rect.x + rect.w * 0.72, y: rect.cy },
+  ];
+}
+
+function fitsInsideRect(bb, rect, margin = 18) {
+  return (
+    bb.x >= rect.x - margin &&
+    bb.y >= rect.y - margin &&
+    bb.x + bb.width <= rect.x + rect.w + margin &&
+    bb.y + bb.height <= rect.y + rect.h + margin
+  );
+}
+
+function addDeptLabel(x, y, text) {
+  const group = svgEl('g', { class: 'deptLabelGroup' });
+  const label = svgEl(
+    'text',
+    {
+      x,
+      y,
+      class: 'deptLabel',
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle',
+    },
+    text,
+  );
+  group.appendChild(label);
+  deptLabelLayer.appendChild(group);
+
+  const bb = label.getBBox();
+  const pad = 8;
+  const bg = svgEl('rect', {
+    x: bb.x - pad,
+    y: bb.y - pad,
+    width: bb.width + pad * 2,
+    height: bb.height + pad * 2,
+    rx: 6,
+    class: 'deptLabelBg',
+  });
+  group.insertBefore(bg, label);
+  return group.getBBox();
+}
+
 function drawDepartments() {
+  const items = [];
   for (const d of model.departments) {
     if (!d.boundaries?.length) continue;
     const rect = boundariesToRect(d.boundaries);
     if (rect.w < 8 || rect.h < 8) continue;
+    items.push({ name: d.name, rect, area: rect.w * rect.h });
+  }
+
+  items.sort((a, b) => b.area - a.area);
+  for (const item of items) {
     addTo(
       deptLayer,
       svgEl('rect', {
-        x: rect.x,
-        y: rect.y,
-        width: rect.w,
-        height: rect.h,
+        x: item.rect.x,
+        y: item.rect.y,
+        width: item.rect.w,
+        height: item.rect.h,
         rx: 12,
         class: 'dept',
       }),
     );
-    if (rect.w < 120 || rect.h < 80) continue;
-    addTo(
-      deptLayer,
-      svgEl('text', { x: rect.cx, y: rect.cy, class: 'deptLabel', 'text-anchor': 'middle' }, d.name),
+  }
+
+  const placed = [];
+  const labelCandidates = items
+    .filter((item) => item.rect.w >= 140 && item.rect.h >= 90)
+    .sort((a, b) => b.area - a.area);
+
+  for (const item of labelCandidates) {
+    const nestedInLarger = items.some(
+      (other) =>
+        other.area > item.area * 1.35 &&
+        rectOverlapRatio(item.rect, other.rect) > 0.82,
     );
+    if (nestedInLarger) continue;
+
+    let placedLabel = false;
+    for (const slot of labelSlots(item.rect)) {
+      const probe = svgEl(
+        'text',
+        {
+          x: slot.x,
+          y: slot.y,
+          class: 'deptLabel',
+          'text-anchor': 'middle',
+          'dominant-baseline': 'middle',
+        },
+        item.name,
+      );
+      deptLabelLayer.appendChild(probe);
+      const probeBox = probe.getBBox();
+      probe.remove();
+
+      if (!fitsInsideRect(probeBox, item.rect)) continue;
+      if (placed.some((box) => boxesOverlap(probeBox, box))) continue;
+
+      const box = addDeptLabel(slot.x, slot.y, item.name);
+      placed.push(box);
+      placedLabel = true;
+      break;
+    }
+    if (!placedLabel && item.area > 350000) {
+      const box = addDeptLabel(item.rect.cx, item.rect.cy, item.name);
+      if (placed.some((b) => boxesOverlap(box, b))) {
+        deptLabelLayer.lastChild?.remove();
+      } else {
+        placed.push(box);
+      }
+    }
   }
 }
 

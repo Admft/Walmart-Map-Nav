@@ -157,19 +157,26 @@ svg:active {
 }
 
 .dept {
-  fill: #e5e7eb;
-  opacity: 0.55;
-  stroke: #cbd5e1;
-  stroke-width: 4;
+  fill: #dfe6ee;
+  fill-opacity: 0.3;
+  stroke: #c8d1dc;
+  stroke-width: 3;
+}
+
+.deptLabelBg {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: #e2e8f0;
+  stroke-width: 2;
 }
 
 .deptLabel {
-  font-size: 34px;
-  fill: #64748b;
+  font-size: 26px;
+  fill: #334155;
   font-weight: 700;
   paint-order: stroke;
-  stroke: white;
-  stroke-width: 8px;
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 5px;
+  pointer-events: none;
 }
 
 .aisleDot {
