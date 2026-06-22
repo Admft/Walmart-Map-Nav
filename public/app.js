@@ -115,16 +115,44 @@ function clearLayers() {
   highlightLayer.innerHTML = '';
 }
 
+function boundariesToRect(boundaries) {
+  const xs = boundaries.map((b) => b.x);
+  const ys = boundaries.map((b) => b.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  return {
+    x: minX,
+    y: minY,
+    w: maxX - minX,
+    h: maxY - minY,
+    cx: (minX + maxX) / 2,
+    cy: (minY + maxY) / 2,
+  };
+}
+
 function drawDepartments() {
   for (const d of model.departments) {
     if (!d.boundaries?.length) continue;
-    const pts = d.boundaries.map((b) => `${b.x},${b.y}`).join(' ');
-    addTo(deptLayer, svgEl('polygon', { points: pts, class: 'dept' }));
-    const xs = d.boundaries.map((b) => b.x);
-    const ys = d.boundaries.map((b) => b.y);
-    const cx = xs.reduce((a, b) => a + b, 0) / xs.length;
-    const cy = ys.reduce((a, b) => a + b, 0) / ys.length;
-    addTo(deptLayer, svgEl('text', { x: cx, y: cy, class: 'deptLabel', 'text-anchor': 'middle' }, d.name));
+    const rect = boundariesToRect(d.boundaries);
+    if (rect.w < 8 || rect.h < 8) continue;
+    addTo(
+      deptLayer,
+      svgEl('rect', {
+        x: rect.x,
+        y: rect.y,
+        width: rect.w,
+        height: rect.h,
+        rx: 12,
+        class: 'dept',
+      }),
+    );
+    if (rect.w < 120 || rect.h < 80) continue;
+    addTo(
+      deptLayer,
+      svgEl('text', { x: rect.cx, y: rect.cy, class: 'deptLabel', 'text-anchor': 'middle' }, d.name),
+    );
   }
 }
 
