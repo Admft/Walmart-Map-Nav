@@ -226,7 +226,9 @@ function highlightAisle(aisleKey) {
 }
 
 function focusOn(target, w = 1800, h = 1200) {
-  setView(target.x - w / 2, target.y - h / 2, w, h);
+  const x = target.x ?? target.cx;
+  const y = target.y ?? target.cy;
+  setView(x - w / 2, y - h / 2, w, h);
 }
 
 function showMatches(q) {
