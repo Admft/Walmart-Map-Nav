@@ -16,16 +16,21 @@
   <div class="layout">
     <aside>
       <h2 style="margin-top:0">Store</h2>
-      <div class="storeRow">
-        <input id="storeInput" inputmode="numeric" placeholder="1216" />
+      <label class="fieldLabel" for="storeSelect">Pick a store</label>
+      <select id="storeSelect" class="storeSelect">
+        <option value="">Select a store…</option>
+      </select>
+      <div class="storeRow" style="margin-top:10px">
+        <input id="storeInput" inputmode="numeric" placeholder="Or type #…" />
         <button class="primary" id="loadStoreBtn">Load</button>
+        <button id="favoriteBtn" class="favoriteBtn" title="Favorite this store">☆</button>
       </div>
-      <p class="hint">Double-click <strong>WalmartMapNav.bat</strong> to run. Stores save locally on this device.</p>
+      <div id="favoriteStores" class="favoriteStores"></div>
+      <p class="hint" id="storeHint">155 stores built in. Star your usual stores for quick access.</p>
       <div class="storeRow">
         <button id="importStoreBtn">Import map file</button>
         <input id="importStoreInput" type="file" accept=".html,.htm,text/html" hidden />
       </div>
-      <ul class="cacheList" id="cacheList"></ul>
 
       <h2 class="sectionTitle">Find an aisle</h2>
       <div class="searchRow">

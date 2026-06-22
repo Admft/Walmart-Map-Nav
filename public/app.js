@@ -25,7 +25,46 @@ const details = document.getElementById('details');
 const nearbyEl = document.getElementById('nearby');
 const matchesEl = document.getElementById('matches');
 const badge = document.getElementById('badge');
-const cacheList = document.getElementById('cacheList');
+const storeSelect = document.getElementById('storeSelect');
+const favoriteBtn = document.getElementById('favoriteBtn');
+const favoriteStoresEl = document.getElementById('favoriteStores');
+const storeHint = document.getElementById('storeHint');
+
+const FAVORITES_KEY = 'walmart-map-nav-favorites';
+
+function getFavorites() {
+  try {
+    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]').map(String);
+  } catch {
+    return [];
+  }
+}
+
+function setFavorites(ids) {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify([...new Set(ids.map(String))]));
+}
+
+function isFavorite(id) {
+  return getFavorites().includes(String(id));
+}
+
+function toggleFavorite(id) {
+  const sid = String(id);
+  if (!sid) return false;
+  const favs = getFavorites();
+  const i = favs.indexOf(sid);
+  if (i >= 0) favs.splice(i, 1);
+  else favs.push(sid);
+  setFavorites(favs);
+  return favs.includes(sid);
+}
+
+function updateFavoriteButton(storeId) {
+  const on = storeId && isFavorite(storeId);
+  favoriteBtn.textContent = on ? '★' : '☆';
+  favoriteBtn.classList.toggle('isFavorite', on);
+  favoriteBtn.title = on ? 'Remove from favorites' : 'Add to favorites';
+}
 const myLocationBtn = document.getElementById('myLocationBtn');
 const importStoreBtn = document.getElementById('importStoreBtn');
 const importStoreInput = document.getElementById('importStoreInput');
@@ -603,23 +642,63 @@ async function fetchMapData(id, forceDownload = false) {
 
 async function refreshCacheList(activeStoreId) {
   const stores = await listKnownStoreIds();
-  cacheList.innerHTML = '';
+  const favorites = getFavorites().filter((id) => stores.includes(id));
+  const rest = stores.filter((id) => !favorites.includes(id));
+
+  storeSelect.innerHTML = '<option value="">Select a store…</option>';
+
   if (!stores.length) {
-    cacheList.innerHTML = '<li class="hint">No stores yet. Load one or import a map file.</li>';
+    storeHint.textContent = 'No stores yet. Load one or import a map file.';
+    favoriteStoresEl.innerHTML = '';
+    updateFavoriteButton(null);
     return;
   }
-  for (const id of stores) {
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.textContent = id === activeStoreId ? `Store ${id} ✓` : `Store ${id}`;
-    if (id === activeStoreId) btn.classList.add('active');
-    btn.onclick = () => {
+
+  storeHint.textContent = `${stores.length} stores available. Star your usual stores for quick access.`;
+
+  if (favorites.length) {
+    const group = document.createElement('optgroup');
+    group.label = 'Favorites';
+    for (const id of favorites) {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = `★ Store ${id}`;
+      if (id === String(activeStoreId)) opt.selected = true;
+      group.appendChild(opt);
+    }
+    storeSelect.appendChild(group);
+  }
+
+  const allGroup = document.createElement('optgroup');
+  allGroup.label = favorites.length ? 'All stores' : 'Stores';
+  for (const id of rest) {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = `Store ${id}`;
+    if (id === String(activeStoreId)) opt.selected = true;
+    allGroup.appendChild(opt);
+  }
+  storeSelect.appendChild(allGroup);
+
+  if (activeStoreId && !favorites.includes(String(activeStoreId))) {
+    const match = storeSelect.querySelector(`option[value="${activeStoreId}"]`);
+    if (match) match.selected = true;
+  }
+
+  favoriteStoresEl.innerHTML = '';
+  for (const id of favorites) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'favoriteChip' + (id === String(activeStoreId) ? ' active' : '');
+    chip.innerHTML = `<span class="star">★</span>${id}`;
+    chip.onclick = () => {
       storeInput.value = id;
       loadStore(id);
     };
-    li.appendChild(btn);
-    cacheList.appendChild(li);
+    favoriteStoresEl.appendChild(chip);
   }
+
+  updateFavoriteButton(activeStoreId || model?.storeId);
 }
 
 function applyModel(next) {
@@ -651,6 +730,7 @@ async function loadStore(storeId, forceDownload = false) {
     applyModel(mapDataToModel(mapData));
     statusEl.textContent = `Store ${id} · ${source}`;
     await refreshCacheList(id);
+    updateFavoriteButton(id);
     if (location.hash !== `#${id}`) history.replaceState(null, '', `#${id}`);
   } catch (err) {
     statusEl.textContent = err.message;
@@ -767,6 +847,17 @@ loadStoreBtn.onclick = () => loadStore(storeInput.value);
 storeInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') loadStore(storeInput.value);
 });
+storeSelect.addEventListener('change', () => {
+  if (!storeSelect.value) return;
+  storeInput.value = storeSelect.value;
+  loadStore(storeSelect.value);
+});
+favoriteBtn.onclick = () => {
+  const id = String(model?.storeId || storeInput.value).replace(/\D/g, '');
+  if (!id) return;
+  toggleFavorite(id);
+  refreshCacheList(id);
+};
 importStoreBtn.onclick = () => importStoreInput.click();
 importStoreInput.addEventListener('change', (e) => {
   const file = e.target.files?.[0];

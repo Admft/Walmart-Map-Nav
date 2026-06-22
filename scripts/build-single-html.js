@@ -56,8 +56,8 @@ const body = fs
   .readFileSync(path.join(publicDir, 'index.html'), 'utf8')
   .replace(/<link rel="stylesheet" href="styles\.css" \/>/, '')
   .replace(
-    /<p class="hint">[\s\S]*?<\/p>/,
-    `<p class="hint">Open this file in Chrome or Edge. Built-in stores: <strong>${formatStoreHint(bundledIds)}</strong>. Use <strong>Import map file</strong> to add more.</p>`,
+    /<p class="hint" id="storeHint">[\s\S]*?<\/p>/,
+    `<p class="hint" id="storeHint">${bundledIds.length} stores built in. Star your usual stores for quick access.</p>`,
   )
   .replace(
     /<script type="module" src="app\.js"><\/script>/,

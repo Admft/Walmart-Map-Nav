@@ -304,18 +304,67 @@ svg:active {
   line-height: 1.45;
 }
 
-.cacheList {
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
+.fieldLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 650;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+.storeSelect {
+  width: 100%;
+  border: 2px solid #9ca3af;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #fff;
+}
+
+.favoriteBtn {
+  min-width: 44px;
+  font-size: 22px;
+  line-height: 1;
+  color: #9ca3af;
+  padding: 8px 10px;
+}
+
+.favoriteBtn.isFavorite {
+  color: #f59e0b;
+}
+
+.favoriteStores {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin: 8px 0 4px;
+  min-height: 0;
 }
 
-.cacheList button {
+.favoriteStores:empty {
+  display: none;
+}
+
+.favoriteChip {
   font-size: 12px;
   padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.favoriteChip.active {
+  background: #f59e0b;
+  border-color: #d97706;
+  color: #fff;
+}
+
+.favoriteChip .star {
+  margin-right: 4px;
 }
 
 .nearby {
