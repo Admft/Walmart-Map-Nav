@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Walmart Map Nav</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Walmart Map Nav</h1>
+    <span class="badge" id="badge">Search</span>
+    <span class="hint">Search <strong>A13</strong> for a whole aisle or <strong>A13.5</strong> for an exact shelf spot.</span>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <h2 style="margin-top:0">Store</h2>
+      <div class="storeRow">
+        <input id="storeInput" inputmode="numeric" placeholder="1216" />
+        <button class="primary" id="loadStoreBtn">Load</button>
+      </div>
+      <p class="hint">Uses local cache in <code>stores/</code>. Already-downloaded stores load instantly.</p>
+      <ul class="cacheList" id="cacheList"></ul>
+
+      <h2 class="sectionTitle">Find an aisle</h2>
+      <div class="searchRow">
+        <input id="search" class="aisleInput" placeholder="A13 or A13.5" autocomplete="off" />
+        <button class="primary" id="goBtn">Find</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="myLocationBtn">Set my location</button>
+        <button id="fullBtn">Full store</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+      <div id="details" class="details">Enter an aisle like A13 (full aisle) or A13.5 (exact spot).</div>
+      <h3>Nearby labels</h3>
+      <div class="nearby" id="nearby"></div>
+      <div class="matches" id="matches"></div>
+    </aside>
+
+    <main class="mapCard">
+      <div class="toolbar">
+        <button id="zoomIn">Zoom in</button>
+        <button id="zoomOut">Zoom out</button>
+        <button id="homeBtn">Home</button>
+        <span id="status">Ready</span>
+      </div>
+      <div id="mapWrap">
+        <svg id="svg" viewBox="0 0 1000 1000" role="img" aria-label="Interactive Walmart store map">
+          <defs>
+            <marker id="arrowhead" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">
+              <polygon points="0 0, 12 5, 0 10" fill="#e11d48"></polygon>
+            </marker>
+            <marker id="routeArrow" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">
+              <polygon points="0 0, 12 5, 0 10" fill="#059669"></polygon>
+            </marker>
+          </defs>
+          <g id="viewport">
+            <g id="deptLayer"></g>
+            <g id="pointLayer"></g>
+            <g id="poiLayer"></g>
+            <g id="routeLayer"></g>
+            <g id="highlightLayer"></g>
+          </g>
+        </svg>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

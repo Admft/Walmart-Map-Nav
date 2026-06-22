@@ -1,0 +1,13 @@
+{
+  "name": "walmart-map-nav",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Searchable Walmart in-store aisle map with navigation",
+  "scripts": {
+    "start": "node server.js",
+    "inspect": "node scripts/inspect-map.js stores/1216.html"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

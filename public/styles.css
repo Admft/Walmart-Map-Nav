@@ -1,0 +1,356 @@
+:root {
+  --bg: #f7f7f8;
+  --panel: #fff;
+  --ink: #111827;
+  --muted: #6b7280;
+  --line: #d1d5db;
+  --target: #e11d48;
+  --accent: #2563eb;
+  --soft: #fff1f2;
+  --aisle: #fbbf24;
+  --you: #059669;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+header {
+  padding: 16px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: #9f1239;
+  border: 1px solid #fecdd3;
+  font-weight: 800;
+  min-width: 92px;
+  justify-content: center;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+
+aside,
+.mapCard {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+aside {
+  padding: 16px;
+}
+
+.mapCard {
+  overflow: hidden;
+  min-height: 78vh;
+}
+
+.storeRow,
+.searchRow {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  border: 2px solid #9ca3af;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+input.aisleInput {
+  text-transform: uppercase;
+}
+
+button {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  font-weight: 800;
+}
+
+button.active {
+  background: #ecfdf5;
+  border-color: #34d399;
+  color: #065f46;
+  font-weight: 700;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+#status {
+  color: #374151;
+  font-weight: 650;
+}
+
+#mapWrap {
+  width: 100%;
+  height: calc(78vh - 55px);
+  overflow: hidden;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: linear-gradient(0deg, #fff, #fbfbfb);
+  cursor: grab;
+  touch-action: none;
+}
+
+svg.placing {
+  cursor: crosshair;
+}
+
+svg:active {
+  cursor: grabbing;
+}
+
+.dept {
+  fill: #e5e7eb;
+  opacity: 0.55;
+  stroke: #cbd5e1;
+  stroke-width: 4;
+}
+
+.deptLabel {
+  font-size: 34px;
+  fill: #64748b;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 8px;
+}
+
+.aisleDot {
+  fill: #9ca3af;
+  opacity: 0.22;
+}
+
+.poi {
+  fill: #111827;
+  opacity: 0.78;
+}
+
+.smallLabel {
+  font-size: 23px;
+  fill: #374151;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 7px;
+}
+
+.aisleBand {
+  fill: rgba(251, 191, 36, 0.35);
+  stroke: #d97706;
+  stroke-width: 10;
+}
+
+.aisleBandEdge {
+  fill: none;
+  stroke: #b45309;
+  stroke-width: 14;
+  stroke-dasharray: 28 18;
+  opacity: 0.85;
+}
+
+.targetDot {
+  fill: var(--target);
+  stroke: white;
+  stroke-width: 16;
+  filter: drop-shadow(0 3px 8px rgba(225, 29, 72, 0.45));
+}
+
+.targetRing {
+  fill: none;
+  stroke: var(--target);
+  stroke-width: 10;
+  stroke-dasharray: 26 13;
+}
+
+.targetRing2 {
+  fill: none;
+  stroke: var(--target);
+  stroke-width: 5;
+  opacity: 0.6;
+}
+
+.crosshair {
+  stroke: var(--target);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.label {
+  font-size: 30px;
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 8px;
+  stroke-linejoin: round;
+  fill: #111827;
+  font-weight: 750;
+}
+
+.callout {
+  font-size: 42px;
+  fill: #9f1239;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 12px;
+  stroke-linejoin: round;
+}
+
+.arrow {
+  stroke: var(--target);
+  stroke-width: 11;
+  fill: none;
+  marker-end: url(#arrowhead);
+}
+
+.routeLine {
+  stroke: var(--you);
+  stroke-width: 16;
+  stroke-dasharray: 30 18;
+  fill: none;
+  marker-end: url(#routeArrow);
+  opacity: 0.9;
+}
+
+.youDot {
+  fill: var(--you);
+  stroke: white;
+  stroke-width: 14;
+}
+
+.youRing {
+  fill: none;
+  stroke: var(--you);
+  stroke-width: 8;
+  stroke-dasharray: 18 12;
+}
+
+.details {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  border-radius: 12px;
+  line-height: 1.45;
+}
+
+.cacheList {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cacheList button {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.nearby {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  font-size: 13px;
+}
+
+.nearby button {
+  text-align: left;
+  padding: 7px;
+  background: #f3f4f6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matches {
+  margin-top: 10px;
+  max-height: 180px;
+  overflow: auto;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 8px;
+}
+
+.matches button {
+  margin: 3px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sectionTitle {
+  margin: 18px 0 6px;
+  font-size: 15px;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  #mapWrap {
+    height: 70vh;
+  }
+}
