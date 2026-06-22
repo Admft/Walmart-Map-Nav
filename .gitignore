@@ -1,3 +1,4 @@
 node_modules/
 store_*_raw.html
+launcher/pack/
 dist/

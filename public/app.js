@@ -521,20 +521,25 @@ function findAisle(raw) {
 
 async function listKnownStoreIds() {
   const ids = new Set(await storeCache.listCachedStores());
-  try {
-    const res = await fetch('/api/stores');
-    if (res.ok) {
-      const data = await res.json();
-      for (const id of data.stores || []) ids.add(String(id));
-    }
-  } catch {}
-  try {
-    const res = await fetch('stores/manifest.json');
-    if (res.ok) {
-      const data = await res.json();
-      for (const id of data.stores || []) ids.add(String(id));
-    }
-  } catch {}
+  if (window.BUNDLED_STORES) {
+    for (const id of Object.keys(window.BUNDLED_STORES)) ids.add(String(id));
+  }
+  if (location.protocol.startsWith('http')) {
+    try {
+      const res = await fetch('/api/stores');
+      if (res.ok) {
+        const data = await res.json();
+        for (const id of data.stores || []) ids.add(String(id));
+      }
+    } catch {}
+    try {
+      const res = await fetch('stores/manifest.json');
+      if (res.ok) {
+        const data = await res.json();
+        for (const id of data.stores || []) ids.add(String(id));
+      }
+    } catch {}
+  }
   return [...ids].sort((a, b) => Number(a) - Number(b));
 }
 
@@ -544,36 +549,45 @@ async function fetchMapData(id, forceDownload = false) {
     if (cached) return { mapData: cached, source: 'saved on this device' };
   }
 
-  try {
-    const q = forceDownload ? '?force=1' : '';
-    const res = await fetch(`/api/store/${id}${q}`);
-    if (res.ok) {
-      const payload = await res.json();
-      const mapData = payload.mapData || extractMapData(payload.html);
-      await storeCache.putStore(id, mapData);
-      const source = payload.cached ? 'local folder' : 'downloaded from Walmart';
-      return { mapData, source };
-    }
-    if (res.status !== 404) {
-      const payload = await res.json().catch(() => ({}));
-      throw new Error(payload.error || `Failed to load store ${id}`);
-    }
-  } catch (err) {
-    if (err.message && !err.message.includes('Failed to fetch')) throw err;
+  if (window.BUNDLED_STORES?.[id]) {
+    const mapData = window.BUNDLED_STORES[id];
+    await storeCache.putStore(id, mapData);
+    return { mapData, source: 'built into this file' };
   }
 
-  try {
-    const res = await fetch(`stores/${id}.json`);
-    if (res.ok) {
-      const mapData = await res.json();
-      await storeCache.putStore(id, mapData);
-      return { mapData, source: 'bundled with app' };
+  if (location.protocol.startsWith('http')) {
+    try {
+      const q = forceDownload ? '?force=1' : '';
+      const res = await fetch(`/api/store/${id}${q}`);
+      if (res.ok) {
+        const payload = await res.json();
+        const mapData = payload.mapData || extractMapData(payload.html);
+        await storeCache.putStore(id, mapData);
+        const source = payload.cached ? 'local folder' : 'downloaded from Walmart';
+        return { mapData, source };
+      }
+      if (res.status !== 404) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || `Failed to load store ${id}`);
+      }
+    } catch (err) {
+      if (err.message && !err.message.includes('Failed to fetch')) throw err;
     }
-  } catch {}
 
-  throw new Error(
-    `Store ${id} not found. Connect to the internet and try again, or use Import Map to add a downloaded store file.`,
-  );
+    try {
+      const res = await fetch(`stores/${id}.json`);
+      if (res.ok) {
+        const mapData = await res.json();
+        await storeCache.putStore(id, mapData);
+        return { mapData, source: 'bundled with app' };
+      }
+    } catch {}
+  }
+
+  const hint = window.STANDALONE_HTML
+    ? 'Use Import map file — open the Walmart map page in your browser, save it as .html, then import it here.'
+    : 'Connect to the internet and try again, or use Import map file.';
+  throw new Error(`Store ${id} not found. ${hint}`);
 }
 
 async function refreshCacheList(activeStoreId) {
