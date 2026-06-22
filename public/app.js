@@ -60,13 +60,26 @@ function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-function nearestAislePoint(x, y) {
-  if (!model?.points?.length) return { x, y, id: null, snapDistance: 0 };
+function mapToClient(mapX, mapY) {
+  const pt = svg.createSVGPoint();
+  pt.x = mapX;
+  pt.y = mapY;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: 0, y: 0 };
+  const screen = pt.matrixTransform(ctm);
+  return { x: screen.x, y: screen.y };
+}
+
+function nearestAislePoint(clientX, clientY) {
+  if (!model?.points?.length) {
+    const tap = clientToMap(clientX, clientY);
+    return { x: tap.x, y: tap.y, id: null, snapDistance: 0 };
+  }
   let best = model.points[0];
-  let bestD = distance({ x, y }, best);
-  for (let i = 1; i < model.points.length; i++) {
-    const p = model.points[i];
-    const d = distance({ x, y }, p);
+  let bestD = Infinity;
+  for (const p of model.points) {
+    const screen = mapToClient(p.x, p.y);
+    const d = Math.hypot(screen.x - clientX, screen.y - clientY);
     if (d < bestD) {
       bestD = d;
       best = p;
@@ -79,6 +92,7 @@ function setPlacementPointerEvents(enabled) {
   const value = enabled ? 'none' : '';
   pointLayer.style.pointerEvents = value;
   poiLayer.style.pointerEvents = value;
+  deptLayer.style.pointerEvents = value;
 }
 
 function svgEl(tag, attrs = {}, text) {
@@ -418,15 +432,14 @@ async function loadStore(storeId, forceDownload = false) {
   }
 }
 
-function clientToMap(evt) {
-  const v = getView();
-  const rect = svg.getBoundingClientRect();
-  const relX = (evt.clientX - rect.left) / rect.width;
-  const relY = (evt.clientY - rect.top) / rect.height;
-  return {
-    x: v.x + relX * v.w,
-    y: v.y + relY * v.h,
-  };
+function clientToMap(clientX, clientY) {
+  const pt = svg.createSVGPoint();
+  pt.x = clientX;
+  pt.y = clientY;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: 0, y: 0 };
+  const map = pt.matrixTransform(ctm.inverse());
+  return { x: map.x, y: map.y };
 }
 
 function toggleMyLocationMode() {
@@ -471,8 +484,7 @@ svg.addEventListener('pointerup', (e) => {
 
 svg.addEventListener('click', (e) => {
   if (!placingLocation) return;
-  const tap = clientToMap(e);
-  myLocation = nearestAislePoint(tap.x, tap.y);
+  myLocation = nearestAislePoint(e.clientX, e.clientY);
   placingLocation = false;
   myLocationBtn.classList.remove('active');
   svg.classList.remove('placing');
