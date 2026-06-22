@@ -16,12 +16,50 @@ function storePath(storeId) {
   return path.join(STORES_DIR, `${storeId}.html`);
 }
 
+function storeJsonPath(storeId) {
+  return path.join(STORES_DIR, `${storeId}.json`);
+}
+
+function extractMapDataFromHtml(html) {
+  const marker = 'window.mapData =';
+  const start = html.indexOf(marker);
+  if (start < 0) throw new Error('Could not find window.mapData');
+  const jsonStart = start + marker.length;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  let end = -1;
+  for (let i = jsonStart; i < html.length; i++) {
+    const c = html[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') {
+      inStr = true;
+      continue;
+    }
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) {
+        end = i + 1;
+        break;
+      }
+    }
+  }
+  if (end < 0) throw new Error('Could not parse mapData JSON');
+  return JSON.parse(html.slice(jsonStart, end).trim());
+}
+
 function listCachedStores() {
-  return fs
-    .readdirSync(STORES_DIR)
-    .filter((f) => /^\d+\.html$/.test(f))
-    .map((f) => f.replace(/\.html$/, ''))
-    .sort((a, b) => Number(a) - Number(b));
+  const ids = new Set();
+  for (const f of fs.readdirSync(STORES_DIR)) {
+    if (/^\d+\.(html|json)$/.test(f)) ids.add(f.replace(/\.(html|json)$/, ''));
+  }
+  return [...ids].sort((a, b) => Number(a) - Number(b));
 }
 
 app.get('/api/stores', (_req, res) => {
@@ -36,15 +74,31 @@ app.get('/api/store/:id', async (req, res) => {
   }
 
   const force = req.query.force === '1' || req.query.refresh === '1';
-  const file = storePath(storeId);
-  if (!force && fs.existsSync(file)) {
-    const html = fs.readFileSync(file, 'utf8');
-    const stat = fs.statSync(file);
+  const jsonFile = storeJsonPath(storeId);
+  const htmlFile = storePath(storeId);
+
+  if (!force && fs.existsSync(jsonFile)) {
+    const mapData = JSON.parse(fs.readFileSync(jsonFile, 'utf8'));
+    const stat = fs.statSync(jsonFile);
     res.json({
       storeId,
       cached: true,
       downloadedAt: stat.mtime.toISOString(),
-      html,
+      mapData,
+    });
+    return;
+  }
+
+  if (!force && fs.existsSync(htmlFile)) {
+    const html = fs.readFileSync(htmlFile, 'utf8');
+    const mapData = extractMapDataFromHtml(html);
+    fs.writeFileSync(jsonFile, JSON.stringify(mapData), 'utf8');
+    const stat = fs.statSync(htmlFile);
+    res.json({
+      storeId,
+      cached: true,
+      downloadedAt: stat.mtime.toISOString(),
+      mapData,
     });
     return;
   }
@@ -63,12 +117,14 @@ app.get('/api/store/:id', async (req, res) => {
       res.status(502).json({ error: 'Downloaded file does not look like a Walmart map page' });
       return;
     }
-    fs.writeFileSync(file, html, 'utf8');
+    const mapData = extractMapDataFromHtml(html);
+    fs.writeFileSync(htmlFile, html, 'utf8');
+    fs.writeFileSync(jsonFile, JSON.stringify(mapData), 'utf8');
     res.json({
       storeId,
       cached: false,
       downloadedAt: new Date().toISOString(),
-      html,
+      mapData,
     });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to download store map' });

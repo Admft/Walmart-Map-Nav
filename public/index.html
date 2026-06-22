@@ -20,7 +20,11 @@
         <input id="storeInput" inputmode="numeric" placeholder="1216" />
         <button class="primary" id="loadStoreBtn">Load</button>
       </div>
-      <p class="hint">Uses local cache in <code>stores/</code>. Already-downloaded stores load instantly.</p>
+      <p class="hint">Double-click <strong>WalmartMapNav.bat</strong> to run. Stores save locally on this device.</p>
+      <div class="storeRow">
+        <button id="importStoreBtn">Import map file</button>
+        <input id="importStoreInput" type="file" accept=".html,.htm,text/html" hidden />
+      </div>
       <ul class="cacheList" id="cacheList"></ul>
 
       <h2 class="sectionTitle">Find an aisle</h2>

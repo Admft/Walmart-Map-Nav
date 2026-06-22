@@ -8,6 +8,7 @@ import {
   buildAisleIndex,
   sideInfoForAisle,
 } from './map-parser.js';
+import * as storeCache from './store-cache.js';
 
 const svg = document.getElementById('svg');
 const deptLayer = document.getElementById('deptLayer');
@@ -26,6 +27,8 @@ const matchesEl = document.getElementById('matches');
 const badge = document.getElementById('badge');
 const cacheList = document.getElementById('cacheList');
 const myLocationBtn = document.getElementById('myLocationBtn');
+const importStoreBtn = document.getElementById('importStoreBtn');
+const importStoreInput = document.getElementById('importStoreInput');
 
 let model = null;
 let aisleIndex = new Map();
@@ -516,25 +519,81 @@ function findAisle(raw) {
   renderRouteAndYou();
 }
 
-async function refreshCacheList(activeStoreId) {
+async function listKnownStoreIds() {
+  const ids = new Set(await storeCache.listCachedStores());
   try {
     const res = await fetch('/api/stores');
-    const data = await res.json();
-    cacheList.innerHTML = '';
-    for (const id of data.stores) {
-      const li = document.createElement('li');
-      const btn = document.createElement('button');
-      btn.textContent = id === activeStoreId ? `Store ${id} ✓` : `Store ${id}`;
-      if (id === activeStoreId) btn.classList.add('active');
-      btn.onclick = () => {
-        storeInput.value = id;
-        loadStore(id);
-      };
-      li.appendChild(btn);
-      cacheList.appendChild(li);
+    if (res.ok) {
+      const data = await res.json();
+      for (const id of data.stores || []) ids.add(String(id));
     }
-  } catch {
-    cacheList.innerHTML = '<li class="hint">Start the local server to cache stores.</li>';
+  } catch {}
+  try {
+    const res = await fetch('stores/manifest.json');
+    if (res.ok) {
+      const data = await res.json();
+      for (const id of data.stores || []) ids.add(String(id));
+    }
+  } catch {}
+  return [...ids].sort((a, b) => Number(a) - Number(b));
+}
+
+async function fetchMapData(id, forceDownload = false) {
+  if (!forceDownload) {
+    const cached = await storeCache.getStore(id);
+    if (cached) return { mapData: cached, source: 'saved on this device' };
+  }
+
+  try {
+    const q = forceDownload ? '?force=1' : '';
+    const res = await fetch(`/api/store/${id}${q}`);
+    if (res.ok) {
+      const payload = await res.json();
+      const mapData = payload.mapData || extractMapData(payload.html);
+      await storeCache.putStore(id, mapData);
+      const source = payload.cached ? 'local folder' : 'downloaded from Walmart';
+      return { mapData, source };
+    }
+    if (res.status !== 404) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload.error || `Failed to load store ${id}`);
+    }
+  } catch (err) {
+    if (err.message && !err.message.includes('Failed to fetch')) throw err;
+  }
+
+  try {
+    const res = await fetch(`stores/${id}.json`);
+    if (res.ok) {
+      const mapData = await res.json();
+      await storeCache.putStore(id, mapData);
+      return { mapData, source: 'bundled with app' };
+    }
+  } catch {}
+
+  throw new Error(
+    `Store ${id} not found. Connect to the internet and try again, or use Import Map to add a downloaded store file.`,
+  );
+}
+
+async function refreshCacheList(activeStoreId) {
+  const stores = await listKnownStoreIds();
+  cacheList.innerHTML = '';
+  if (!stores.length) {
+    cacheList.innerHTML = '<li class="hint">No stores yet. Load one or import a map file.</li>';
+    return;
+  }
+  for (const id of stores) {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.textContent = id === activeStoreId ? `Store ${id} ✓` : `Store ${id}`;
+    if (id === activeStoreId) btn.classList.add('active');
+    btn.onclick = () => {
+      storeInput.value = id;
+      loadStore(id);
+    };
+    li.appendChild(btn);
+    cacheList.appendChild(li);
   }
 }
 
@@ -563,21 +622,25 @@ async function loadStore(storeId, forceDownload = false) {
   if (!id) return;
   statusEl.textContent = `Loading store ${id}...`;
   try {
-    const url = forceDownload ? `/api/store/${id}?refresh=1` : `/api/store/${id}`;
-    const res = await fetch(url);
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload.error || 'Failed to load store');
-
-    const mapData = extractMapData(payload.html);
+    const { mapData, source } = await fetchMapData(id, forceDownload);
     applyModel(mapDataToModel(mapData));
-    const cacheNote = payload.cached ? 'from local cache' : 'downloaded and saved';
-    statusEl.textContent = `Store ${id} ${cacheNote}`;
+    statusEl.textContent = `Store ${id} · ${source}`;
     await refreshCacheList(id);
     if (location.hash !== `#${id}`) history.replaceState(null, '', `#${id}`);
   } catch (err) {
     statusEl.textContent = err.message;
     details.textContent = err.message;
   }
+}
+
+async function importStoreFile(file) {
+  const text = await file.text();
+  const mapData = extractMapData(text);
+  const id = String(mapData.storeId);
+  await storeCache.putStore(id, mapData);
+  storeInput.value = id;
+  await loadStore(id);
+  statusEl.textContent = `Imported store ${id} from ${file.name}`;
 }
 
 function clientToMap(clientX, clientY) {
@@ -676,6 +739,12 @@ document.getElementById('clearBtn').onclick = () => {
   search.value = '';
 };
 loadStoreBtn.onclick = () => loadStore(storeInput.value);
+importStoreBtn.onclick = () => importStoreInput.click();
+importStoreInput.addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  if (file) importStoreFile(file);
+  e.target.value = '';
+});
 myLocationBtn.onclick = toggleMyLocationMode;
 search.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') findAisle();
